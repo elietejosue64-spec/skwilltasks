@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8"><link rel="manifest" href="manifest.json">
+<title>WilTasks – Microtarefas em USDT</title>
+<style>
+:root{--b:#1d4ed8;--bl:#eff6ff;--t:#0f172a;--m:#64748b}
+*{box-sizing:border-box}body{margin:0;font:16px system-ui,sans-serif;background:var(--bl);color:var(--t);padding-bottom:70px}
+.w{max-width:760px;margin:auto;padding:16px}.hero{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border-radius:0 0 28px 28px;padding:40px 20px;text-align:center}
+.card{background:#fff;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 2px 10px #1d4ed814;animation:f .3s}@keyframes f{from{opacity:0;transform:translateY(8px)}}
+.btn{background:var(--b);color:#fff;border:0;border-radius:12px;padding:13px 20px;font-weight:700;font-size:16px;cursor:pointer}.btn.w2{background:#fff;color:var(--b)}
+input,textarea,select{width:100%;padding:12px;margin:6px 0;border:1px solid #cbd5e1;border-radius:10px;font:inherit}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #e2e8f0;padding-bottom:env(safe-area-inset-bottom)}
+nav a{flex:1;text-align:center;padding:10px 0;font-size:12px;color:var(--m);cursor:pointer}nav a.on{color:var(--b);font-weight:700}
+.tag{padding:2px 10px;border-radius:99px;font-size:12px;background:#e0e7ff}.pending{background:#fef9c3}.approved,.paid{background:#dcfce7}.rejected{background:#fee2e2}
+.hide{display:none}small,.m{color:var(--m)}h1,h2{margin:.3em 0}ol li{margin:6px 0}
+</style></head><body>
+<div id="pub"><div class="hero"><h1 style="font-size:34px">💼 WilTasks</h1>
+<p>Realize microtarefas, envie uma foto como comprovativo e receba em <b>USDT (BEP20)</b>.</p>
+<p>Levantamento mínimo: <b>0,20 USDT</b></p>
+<button class="btn w2" onclick="auth('r')">CRIAR CONTA</button> <button class="btn" style="background:#1e3a8a" onclick="auth('l')">INICIAR SESSÃO</button></div>
+<div class="w"><div class="card"><h2>Como funciona?</h2><ol>
+<li>Crie gratuitamente a sua conta.</li><li>Entre no painel de usuário.</li><li>Escolha uma tarefa disponível.</li>
+<li>Realize a tarefa conforme as instruções.</li><li>Envie uma fotografia como comprovativo.</li>
+<li>Aguarde a análise do administrador.</li><li>Depois da aprovação, receba o valor no seu saldo.</li></ol></div>
+<div class="card"><h2>Pagamentos</h2><p>Pagos em USDT na rede BEP20 (BNB Smart Chain) ou em Metical via e-Mola, manualmente, após verificação. O cadastro exige código de convite.</p></div></div></div>
+
+<div id="au" class="w hide"><div class="card"><h2 id="at"></h2>
+<input id="nm" placeholder="Nome completo" autocomplete="name"><input id="em" type="email" placeholder="E-mail" autocomplete="email">
+<input id="pw" type="password" placeholder="Palavra-passe (mín. 8)"><input id="pw2" type="password" placeholder="Confirmar palavra-passe">
+<input id="iv" placeholder="Código de convite"><button class="btn" id="go" style="width:100%"></button>
+<p><a href="#" onclick="auth(mode=='r'?'l':'r');return false">Alternar entre criar conta / entrar</a> · <a href="#" onclick="show('pub');return false">Voltar</a></p></div></div>
+
+<div id="app" class="w hide"><div id="v"></div>
+<nav><a data-t="tasks">📋<br>Tarefas</a><a data-t="wallet">💰<br>Carteira</a><a data-t="hist">🕘<br>Histórico</a><a data-t="notes">🔔<br>Avisos</a><a data-t="me">👤<br>Perfil</a></nav></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY),$=i=>document.getElementById(i);
+let mode='l',me,tab='tasks',rate=0;const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const show=id=>['pub','au','app'].forEach(x=>$(x).classList.toggle('hide',x!=id));
+function auth(m){mode=m;show('au');$('at').textContent=m=='r'?'Criar conta':'Iniciar sessão';$('go').textContent=m=='r'?'CRIAR CONTA':'ENTRAR';
+['nm','pw2','iv'].forEach(i=>$(i).classList.toggle('hide',m!='r'))}
+$('go').onclick=async()=>{const e=$('em').value.trim(),p=$('pw').value;let r;
+if(mode=='r'){if(p.length<8)return alert('Palavra-passe: mínimo 8 caracteres');if(p!=$('pw2').value)return alert('As palavras-passe não coincidem');
+if(!$('nm').value.trim()||!$('iv').value.trim())return alert('Preencha nome e código de convite');
+r=await sb.auth.signUp({email:e,password:p,options:{data:{name:$('nm').value.trim(),invite:$('iv').value.trim()}}});
+if(!r.error&&!r.data.session)return alert('Conta criada. Confirme o e-mail e inicie sessão.')}
+else r=await sb.auth.signInWithPassword({email:e,password:p});
+if(r.error)return alert(r.error.message);boot()};
+async function boot(){const{data:{user}}=await sb.auth.getUser();if(!user)return show('pub');
+const{data}=await sb.from('profiles').select('*').eq('id',user.id).single();me=data;
+if(!me)return alert('Perfil não encontrado');show('app');render()}
+document.querySelectorAll('nav a').forEach(a=>a.onclick=()=>{tab=a.dataset.t;render()});
+async function render(){document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.t==tab));
+const{data}=await sb.from('profiles').select('*').eq('id',me.id).single();me=data;
+if(me.blocked){$('v').innerHTML='<div class="card"><h2>Conta bloqueada</h2><p>Contacte o suporte.</p></div>';return}
+const hd=`<div class="card" style="background:var(--b);color:#fff"><small style="color:#bfdbfe">Saldo</small><h1>${Number(me.balance).toFixed(2)} USDT</h1></div>`;
+let h=hd;
+if(tab=='tasks'){const[{data:t},{data:s}]=await Promise.all([sb.from('tasks').select('*').eq('active',true).order('created_at',{ascending:false}),sb.from('submissions').select('task_id,status').eq('user_id',me.id).in('status',['pending','approved'])]);
+const d=Object.fromEntries(s.map(x=>[x.task_id,x.status]));
+h+=t.map(k=>`<div class="card"><b>${esc(k.title)}</b> <span class="tag">${k.reward} USDT</span><p class="m">${esc(k.description)}</p>${d[k.id]?`<span class="tag ${d[k.id]}">${d[k.id]}</span>`:`<input type="file" accept="image/*" id="f${k.id}"><button class="btn" onclick="send('${k.id}')">Enviar comprovativo</button>`}</div>`).join('')||'<p class="m">Sem tarefas disponíveis.</p>'}
+if(tab=='wallet'){const[{data:w},{data:st}]=await Promise.all([sb.from('withdrawals').select('*').order('created_at',{ascending:false}),sb.from('settings').select('value').eq('key','mzn_rate').single()]);rate=Number(st?.value||0);
+h+=`<div class="card"><b>Carteira USDT (BEP20)</b><input id="wl" placeholder="0x..." value="${esc(me.wallet)}"><button class="btn" onclick="saveW()">Guardar carteira</button></div>
+<div class="card"><b>Número e-Mola (Moçambique)</b><input id="em2" type="tel" placeholder="86xxxxxxx ou 87xxxxxxx" value="${esc(me.emola)}"><button class="btn" onclick="saveE()">Guardar e-Mola</button></div>
+<div class="card"><b>Levantar</b> <small>(mín. 0,20 USDT)</small><select id="mt"><option value="usdt">USDT (BEP20)</option><option value="emola">Metical via e-Mola</option></select><input id="am" type="number" step="0.01" min="0.20" placeholder="Valor em USDT"><button class="btn" onclick="wd()">Pedir levantamento</button><p class="m">Taxa atual: 1 USDT = ${rate} MZN (fixada no momento do pedido). Pagamentos manuais: só ficam “paid” com a referência da transação.</p></div>
+<h3>Levantamentos</h3>`+w.map(x=>`<div class="card">${x.amount} USDT ${x.method=='emola'?'→ '+x.mzn+' MZN (e-Mola '+esc(x.phone)+')':'(BEP20)'} <span class="tag ${x.status}">${x.status}</span><br><small>${new Date(x.created_at).toLocaleString('pt')}${x.txhash?'<br>Ref: '+esc(x.txhash):''}</small></div>`).join('')}
+if(tab=='hist'){const{data:s}=await sb.from('submissions').select('*,tasks(title,reward)').eq('user_id',me.id).order('created_at',{ascending:false});
+h+=s.map(x=>`<div class="card"><b>${esc(x.tasks?.title)}</b> <span class="tag ${x.status}">${x.status}</span><br><small>${x.tasks?.reward} USDT · ${new Date(x.created_at).toLocaleString('pt')}</small>${x.reason?'<p>Motivo: '+esc(x.reason)+'</p>':''}</div>`).join('')||'<p class="m">Sem histórico.</p>'}
+if(tab=='notes'){const{data:n}=await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(50);
+h+=n.map(x=>`<div class="card">${esc(x.message)}<br><small>${new Date(x.created_at).toLocaleString('pt')}</small></div>`).join('')||'<p class="m">Sem notificações.</p>';
+sb.from('notifications').update({read:true}).eq('read',false).then(()=>{})}
+if(tab=='me')h+=`<div class="card"><b>${esc(me.name)}</b><br><small>${esc(me.email)}</small><p>O seu código de convite exclusivo:</p><h2>${me.invite_code}</h2><small>Sem comissões.</small></div><button class="btn" onclick="sb.auth.signOut().then(()=>location.reload())">Terminar sessão</button>`;
+$('v').innerHTML=h}
+async function send(id){const f=$('f'+id).files[0];if(!f)return alert('Escolha uma fotografia');
+if(!f.type.startsWith('image/')||f.size>5e6)return alert('Imagem até 5 MB');
+const p=`${me.id}/${id}-${Date.now()}`;let r=await sb.storage.from('proofs').upload(p,f,{contentType:f.type});if(r.error)return alert(r.error.message);
+r=await sb.from('submissions').insert({user_id:me.id,task_id:id,photo_path:p});if(r.error)return alert(r.error.message);render()}
+async function saveW(){const r=await sb.rpc('set_wallet',{w:$('wl').value.trim()});alert(r.error?r.error.message:'Carteira guardada');render()}
+async function saveE(){const r=await sb.rpc('set_emola',{p:$('em2').value.trim()});alert(r.error?r.error.message:'e-Mola guardado');render()}
+async function wd(){const r=await sb.rpc('request_withdrawal',{amt:parseFloat($('am').value),m:$('mt').value});alert(r.error?r.error.message:'Pedido enviado');render()}
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');boot();
+</script></body></html>

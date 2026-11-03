@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>WilTasks Admin</title>
+<style>
+body{margin:0;font:15px system-ui,sans-serif;background:#eff6ff;color:#0f172a}.w{max-width:900px;margin:auto;padding:14px}
+.card{background:#fff;border-radius:16px;padding:14px;margin:10px 0;box-shadow:0 2px 8px #1d4ed814}
+button{background:#1d4ed8;color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;margin:3px}button.r{background:#dc2626}button.g{background:#16a34a}
+input,textarea,select{width:100%;padding:10px;margin:4px 0;border:1px solid #cbd5e1;border-radius:8px;font:inherit;box-sizing:border-box}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}img{max-width:100%;border-radius:10px}.hide{display:none}small{color:#64748b}
+</style></head><body><div class="w">
+<h2>🔒 WilTasks · Administração</h2>
+<div id="lg" class="card"><input id="em" type="email" placeholder="E-mail admin"><input id="pw" type="password" placeholder="Palavra-passe"><button onclick="login()">Entrar</button></div>
+<div id="ad" class="hide"><div class="tabs"><button onclick="t='sub';go()">Tarefas enviadas</button><button onclick="t='wd';go()">Levantamentos</button><button onclick="t='tk';go()">Gerir tarefas</button><button onclick="t='us';go()">Utilizadores</button><button onclick="sb.auth.signOut().then(()=>location.reload())">Sair</button></div><div id="v"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY),$=i=>document.getElementById(i);let t='sub';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function login(){const r=await sb.auth.signInWithPassword({email:$('em').value,password:$('pw').value});if(r.error)return alert(r.error.message);boot()}
+async function boot(){const{data:{user}}=await sb.auth.getUser();if(!user)return;
+const{data:p}=await sb.from('profiles').select('is_admin').eq('id',user.id).single();
+if(!p?.is_admin){await sb.auth.signOut();return alert('Acesso negado')}
+$('lg').classList.add('hide');$('ad').classList.remove('hide');go()}
+const run=async(fn,a)=>{const r=await sb.rpc(fn,a);if(r.error)alert(r.error.message);go()};
+async function go(){let h='';
+if(t=='sub'){const{data}=await sb.from('submissions').select('*,tasks(title,reward),profiles(name,email)').eq('status','pending').order('created_at');
+for(const s of data){const u=await sb.storage.from('proofs').createSignedUrl(s.photo_path,600);
+h+=`<div class="card"><b>${esc(s.tasks.title)}</b> · ${s.tasks.reward} USDT<br><small>${esc(s.profiles.name)} (${esc(s.profiles.email)})</small><br><a href="${u.data?.signedUrl}" target="_blank"><img src="${u.data?.signedUrl}"></a>
+<textarea id="r${s.id}" placeholder="Motivo (obrigatório para rejeitar)"></textarea><button class="g" onclick="run('review_submission',{sid:'${s.id}',approve:true,why:null})">Aprovar</button><button class="r" onclick="run('review_submission',{sid:'${s.id}',approve:false,why:$('r${s.id}').value})">Rejeitar</button></div>`}
+h=h||'<p>Nada pendente.</p>'}
+if(t=='wd'){const{data}=await sb.from('withdrawals').select('*,profiles(name,email)').order('created_at',{ascending:false});
+h=`<div class="card"><b>Taxa: MZN por 1 USDT</b><input id="rt" type="number" step="0.01" placeholder="ex: 63.50"><button onclick="run('set_rate',{r:parseFloat($('rt').value)})">Guardar taxa</button></div>`+data.map(w=>`<div class="card"><b>${w.amount} USDT</b> · ${w.method=='emola'?'e-Mola':'BEP20'} · ${w.status}<br><small>${esc(w.profiles.name)} · ${new Date(w.created_at).toLocaleString('pt')}</small><br>${w.method=='emola'?'<b>Pagar '+w.mzn+' MZN</b> para e-Mola <code>'+esc(w.phone)+'</code> (taxa '+w.rate+')':'<code style="word-break:break-all">'+esc(w.wallet)+'</code> (BEP20)'}
+${w.status=='pending'?`<input id="x${w.id}" placeholder="Hash BEP20 ou ID da transação e-Mola"><button class="g" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:true,tx:$('x${w.id}').value})">Marcar como pago</button><button class="r" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:false,tx:null})">Rejeitar/devolver</button>`:w.txhash?'<br>Tx: '+esc(w.txhash):''}</div>`).join('')}
+if(t=='tk'){const{data}=await sb.from('tasks').select('*').order('created_at',{ascending:false});
+h=`<div class="card"><input id="tt" placeholder="Título"><textarea id="td" placeholder="Instruções"></textarea><input id="tr" type="number" step="0.01" placeholder="Recompensa USDT"><button onclick="addT()">Criar tarefa</button></div>`+
+data.map(k=>`<div class="card">${esc(k.title)} · ${k.reward} USDT · ${k.active?'ativa':'inativa'} <button onclick="tog('${k.id}',${!k.active})">${k.active?'Desativar':'Ativar'}</button></div>`).join('')}
+if(t=='us'){const{data}=await sb.from('profiles').select('*').order('created_at',{ascending:false});
+h=data.map(u=>`<div class="card"><b>${esc(u.name)}</b> ${u.blocked?'🚫':''} ${u.is_admin?'(admin)':''}<br><small>${esc(u.email)} · saldo ${u.balance} · violações ${u.violations} · convite de ${esc(u.invited_by||'-')}</small><br>
+${u.is_admin?'':`<button class="r" onclick="run('moderate_user',{uid:'${u.id}',block:${!u.blocked},add_violation:false})">${u.blocked?'Desbloquear':'Bloquear'}</button><button onclick="run('moderate_user',{uid:'${u.id}',block:${u.blocked},add_violation:true})">+ Violação</button>`}</div>`).join('')}
+$('v').innerHTML=h}
+async function addT(){const r=await sb.from('tasks').insert({title:$('tt').value,description:$('td').value,reward:parseFloat($('tr').value)});if(r.error)alert(r.error.message);go()}
+async function tog(id,a){await sb.from('tasks').update({active:a}).eq('id',id);go()}
+boot();
+</script></div></body></html>
