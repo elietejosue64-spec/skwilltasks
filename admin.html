@@ -32,13 +32,17 @@ if(t=='wd'){const{data}=await sb.from('withdrawals').select('*,profiles(name,ema
 h=`<div class="card"><b>Taxa: MZN por 1 USDT</b><input id="rt" type="number" step="0.01" placeholder="ex: 63.50"><button onclick="run('set_rate',{r:parseFloat($('rt').value)})">Guardar taxa</button></div>`+data.map(w=>`<div class="card"><b>${w.amount} USDT</b> · ${w.method=='emola'?'e-Mola':'BEP20'} · ${w.status}<br><small>${esc(w.profiles.name)} · ${new Date(w.created_at).toLocaleString('pt')}</small><br>${w.method=='emola'?'<b>Pagar '+w.mzn+' MZN</b> para e-Mola <code>'+esc(w.phone)+'</code> (taxa '+w.rate+')':'<code style="word-break:break-all">'+esc(w.wallet)+'</code> (BEP20)'}
 ${w.status=='pending'?`<input id="x${w.id}" placeholder="Hash BEP20 ou ID da transação e-Mola"><button class="g" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:true,tx:$('x${w.id}').value})">Marcar como pago</button><button class="r" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:false,tx:null})">Rejeitar/devolver</button>`:w.txhash?'<br>Tx: '+esc(w.txhash):''}</div>`).join('')}
 if(t=='tk'){const{data}=await sb.from('tasks').select('*').order('created_at',{ascending:false});
-h=`<div class="card"><input id="tt" placeholder="Título"><textarea id="td" placeholder="Instruções"></textarea><input id="tr" type="number" step="0.01" placeholder="Recompensa USDT"><button onclick="addT()">Criar tarefa</button></div>`+
-data.map(k=>`<div class="card">${esc(k.title)} · ${k.reward} USDT · ${k.active?'ativa':'inativa'} <button onclick="tog('${k.id}',${!k.active})">${k.active?'Desativar':'Ativar'}</button></div>`).join('')}
+h=`<div class="card"><input id="tt" placeholder="Título"><select id="ttype" onchange="chType()"><option value="texto">Simples (só texto)</option><option value="link">Link</option><option value="copiar">Copiar dados</option></select><textarea id="td" placeholder="Instruções"></textarea><div id="f_link" class="hide"><input id="tl" placeholder="URL (https://...)"></div><div id="f_copiar" class="hide"><input id="tn" placeholder="Nome"><input id="ts" placeholder="Sobrenome"><input id="te" placeholder="E-mail"><input id="tp" placeholder="Senha"></div><input id="tr" type="number" step="0.01" placeholder="Recompensa USDT"><button onclick="addT()">Criar tarefa</button></div>`+
+data.map(k=>`<div class="card">${esc(k.title)} · ${k.reward} USDT · ${k.kind||'texto'} · ${k.active?'ativa':'inativa'} <button onclick="tog('${k.id}',${!k.active})">${k.active?'Desativar':'Ativar'}</button></div>`).join('')}
 if(t=='us'){const{data}=await sb.from('profiles').select('*').order('created_at',{ascending:false});
 h=data.map(u=>`<div class="card"><b>${esc(u.name)}</b> ${u.blocked?'🚫':''} ${u.is_admin?'(admin)':''}<br><small>${esc(u.email)} · saldo ${u.balance} · violações ${u.violations} · convite de ${esc(u.invited_by||'-')}</small><br>
 ${u.is_admin?'':`<button class="r" onclick="run('moderate_user',{uid:'${u.id}',block:${!u.blocked},add_violation:false})">${u.blocked?'Desbloquear':'Bloquear'}</button><button onclick="run('moderate_user',{uid:'${u.id}',block:${u.blocked},add_violation:true})">+ Violação</button>`}</div>`).join('')}
 $('v').innerHTML=h}
-async function addT(){const r=await sb.from('tasks').insert({title:$('tt').value,description:$('td').value,reward:parseFloat($('tr').value)});if(r.error)alert(r.error.message);go()}
+async function addT(){const k=$('ttype').value;let extra={};
+if(k=='link')extra={url:$('tl').value};
+if(k=='copiar')extra={nome:$('tn').value,sobrenome:$('ts').value,email:$('te').value,senha:$('tp').value};
+const r=await sb.from('tasks').insert({title:$('tt').value,description:$('td').value,reward:parseFloat($('tr').value),kind:k,extra});if(r.error)alert(r.error.message);go()}
+function chType(){const k=$('ttype').value;$('f_link').classList.toggle('hide',k!='link');$('f_copiar').classList.toggle('hide',k!='copiar')}
 async function tog(id,a){await sb.from('tasks').update({active:a}).eq('id',id);go()}
 boot();
 </script></div></body></html>
