@@ -1,49 +1,103 @@
 <!DOCTYPE html>
-<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><title>WilTasks Admin</title>
 <style>
-body{margin:0;font:15px system-ui,sans-serif;background:#eff6ff;color:#0f172a}.w{max-width:900px;margin:auto;padding:14px}
+:root{--pri:#1d4ed8;--bg:#eff6ff;--tx:#0f172a;--mut:#64748b;--bd:#dbe4f3;--ok:#16a34a;--bad:#dc2626;--warn:#b45309}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--tx);padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+.w{max-width:700px;margin:auto;padding:0 14px 14px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top,0px)) 0 10px}
+h1{font-size:1.2rem;margin:0}
 .card{background:#fff;border-radius:16px;padding:14px;margin:10px 0;box-shadow:0 2px 8px #1d4ed814}
-button{background:#1d4ed8;color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;margin:3px}button.r{background:#dc2626}button.g{background:#16a34a}
-input,textarea,select{width:100%;padding:10px;margin:4px 0;border:1px solid #cbd5e1;border-radius:8px;font:inherit;box-sizing:border-box}
-.tabs{display:flex;gap:6px;flex-wrap:wrap}img{max-width:100%;border-radius:10px}.hide{display:none}small{color:#64748b}
+button{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:11px 14px;min-height:44px;font:inherit;font-weight:700;cursor:pointer}
+button.r{background:var(--bad)}button.g{background:var(--ok)}button.o{background:#fff;color:var(--pri);border:1px solid var(--bd)}
+.sm{min-height:36px;padding:6px 12px;font-size:.85rem}
+.row{display:flex;gap:8px;margin-top:8px}.row>button{flex:1}
+input,textarea,select{width:100%;padding:11px;margin:4px 0;border:1px solid #cbd5e1;border-radius:10px;font:inherit;background:#fff;color:var(--tx)}
+img{max-width:100%;border-radius:10px;margin-top:8px}small,.mut{color:var(--mut)}
+.hide{display:none}.top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.tag{display:inline-block;border-radius:99px;padding:2px 10px;font-size:.78rem;font-weight:700;background:#e0e9fb;color:var(--pri)}
+.tag.p{background:#fef3c7;color:var(--warn)}.tag.on{background:#dcfce7;color:var(--ok)}.tag.off{background:#e2e8f0;color:var(--mut)}.tag.b{background:#fee2e2;color:var(--bad)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 8px #1d4ed814;cursor:pointer}
+.stat b{display:block;font-size:1.8rem;line-height:1.1}
+code{word-break:break-all;background:var(--bg);padding:2px 6px;border-radius:6px}
+.pay{background:var(--bg);border-radius:10px;padding:10px;margin-top:8px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#fff;border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;min-height:62px;padding:6px 2px;font-size:.72rem;font-weight:600;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button i{font-style:normal;font-size:1.35rem;line-height:1}nav button.on{color:var(--pri)}
+.bd{position:absolute;top:4px;left:calc(50% + 6px);background:var(--bad);color:#fff;border-radius:99px;min-width:18px;padding:0 5px;font-size:.7rem;line-height:18px;text-align:center}
+.menu{position:absolute;right:0;top:100%;background:#fff;border-radius:12px;box-shadow:0 6px 20px #0f172a30;padding:6px;z-index:9}
+.chips{display:flex;gap:8px}
 </style></head><body><div class="w">
-<h2>🔒 WilTasks · Administração</h2>
-<div id="lg" class="card"><input id="em" type="email" placeholder="E-mail admin"><input id="pw" type="password" placeholder="Palavra-passe"><button onclick="login()">Entrar</button></div>
-<div id="ad" class="hide"><div class="tabs"><button onclick="t='sub';go()">Tarefas enviadas</button><button onclick="t='wd';go()">Levantamentos</button><button onclick="t='tk';go()">Gerir tarefas</button><button onclick="t='us';go()">Utilizadores</button><button onclick="sb.auth.signOut().then(()=>location.reload())">Sair</button></div><div id="v"></div></div>
+<header><h1 id="ti">🔒 WilTasks · Admin</h1><div id="mw" class="hide" style="position:relative"><button class="o sm" onclick="$('mn').classList.toggle('hide')" aria-label="Menu">⋮</button><div id="mn" class="menu hide"><button class="r sm" onclick="sb.auth.signOut().then(()=>location.reload())">Sair</button></div></div></header>
+<div id="lg" class="card"><input id="em" type="email" placeholder="E-mail admin" autocomplete="username"><input id="pw" type="password" placeholder="Palavra-passe" autocomplete="current-password"><button style="width:100%;margin-top:6px" onclick="login()">Entrar</button></div>
+<div id="v"></div></div>
+<nav id="nv" class="hide">
+<button data-t="home" onclick="setT('home')"><i>🏠</i>Início</button>
+<button data-t="sub" onclick="setT('sub')"><i>✅</i>Enviadas<span id="b1" class="bd hide"></span></button>
+<button data-t="wd" onclick="setT('wd')"><i>💸</i>Saques<span id="b2" class="bd hide"></span></button>
+<button data-t="tk" onclick="setT('tk')"><i>📋</i>Tarefas</button>
+<button data-t="us" onclick="setT('us')"><i>👥</i>Utilizadores</button>
+</nav>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script>
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY),$=i=>document.getElementById(i);let t='sub';
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY),$=i=>document.getElementById(i);
+let t='home',wf='pending',q='',U=[];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TT={home:'Início',sub:'Tarefas enviadas',wd:'Levantamentos',tk:'Tarefas',us:'Utilizadores'};
+const setT=x=>{t=x;go()};
+const cp=v=>navigator.clipboard.writeText(v).then(()=>alert('Copiado'),()=>prompt('Copie:',v));
 async function login(){const r=await sb.auth.signInWithPassword({email:$('em').value,password:$('pw').value});if(r.error)return alert(r.error.message);boot()}
 async function boot(){const{data:{user}}=await sb.auth.getUser();if(!user)return;
 const{data:p}=await sb.from('profiles').select('is_admin').eq('id',user.id).single();
 if(!p?.is_admin){await sb.auth.signOut();return alert('Acesso negado')}
-$('lg').classList.add('hide');$('ad').classList.remove('hide');go()}
+$('lg').classList.add('hide');$('nv').classList.remove('hide');$('mw').classList.remove('hide');go()}
 const run=async(fn,a)=>{const r=await sb.rpc(fn,a);if(r.error)alert(r.error.message);go()};
-async function go(){let h='';
-if(t=='sub'){const{data}=await sb.from('submissions').select('*,tasks(title,reward),profiles(name,email)').eq('status','pending').order('created_at');
-for(const s of data){const u=await sb.storage.from('proofs').createSignedUrl(s.photo_path,600);
-h+=`<div class="card"><b>${esc(s.tasks.title)}</b> · ${s.tasks.reward} USDT<br><small>${esc(s.profiles.name)} (${esc(s.profiles.email)})</small><br><a href="${u.data?.signedUrl}" target="_blank"><img src="${u.data?.signedUrl}"></a>
-<textarea id="r${s.id}" placeholder="Motivo (obrigatório para rejeitar)"></textarea><button class="g" onclick="run('review_submission',{sid:'${s.id}',approve:true,why:null})">Aprovar</button><button class="r" onclick="run('review_submission',{sid:'${s.id}',approve:false,why:$('r${s.id}').value})">Rejeitar</button></div>`}
-h=h||'<p>Nada pendente.</p>'}
-if(t=='wd'){const{data}=await sb.from('withdrawals').select('*,profiles(name,email)').order('created_at',{ascending:false});
-h=`<div class="card"><b>Taxa: MZN por 1 USDT</b><input id="rt" type="number" step="0.01" placeholder="ex: 63.50"><button onclick="run('set_rate',{r:parseFloat($('rt').value)})">Guardar taxa</button></div>`+data.map(w=>`<div class="card"><b>${w.amount} USDT</b> · ${w.method=='emola'?'e-Mola':'BEP20'} · ${w.status}<br><small>${esc(w.profiles.name)} · ${new Date(w.created_at).toLocaleString('pt')}</small><br>${w.method=='emola'?'<b>Pagar '+w.mzn+' MZN</b> para e-Mola <code>'+esc(w.phone)+'</code> (taxa '+w.rate+')':'<code style="word-break:break-all">'+esc(w.wallet)+'</code> (BEP20)'}
-${w.status=='pending'?`<input id="x${w.id}" placeholder="Hash BEP20 ou ID da transação e-Mola"><button class="g" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:true,tx:$('x${w.id}').value})">Marcar como pago</button><button class="r" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:false,tx:null})">Rejeitar/devolver</button>`:w.txhash?'<br>Tx: '+esc(w.txhash):''}</div>`).join('')}
-if(t=='tk'){const{data}=await sb.from('tasks').select('*').order('created_at',{ascending:false});
-h=`<div class="card"><input id="tt" placeholder="Título"><select id="ttype" onchange="chType()"><option value="texto">Simples (só texto)</option><option value="link">Link</option><option value="copiar">Copiar dados</option></select><textarea id="td" placeholder="Instruções"></textarea><div id="f_link" class="hide"><input id="tl" placeholder="URL (https://...)"></div><div id="f_copiar" class="hide"><input id="tn" placeholder="Nome"><input id="ts" placeholder="Sobrenome"><input id="te" placeholder="E-mail"><input id="tp" placeholder="Senha"></div><input id="tr" type="number" step="0.01" placeholder="Recompensa USDT"><small>Quantas pessoas podem fazer esta tarefa?</small><input id="tsl" type="number" min="1" step="1" value="1" placeholder="Quantas pessoas"><button onclick="addT()">Criar tarefa</button></div>`+
-data.map(k=>`<div class="card">${esc(k.title)} · ${k.reward} USDT · ${k.kind||'texto'} · ${k.slots||1} vaga(s) · ${k.active?'ativa':'inativa'} <button onclick="tog('${k.id}',${!k.active})">${k.active?'Desativar':'Ativar'}</button></div>`).join('')}
-if(t=='us'){const{data}=await sb.from('profiles').select('*').order('created_at',{ascending:false});
-h=data.map(u=>`<div class="card"><b>${esc(u.name)}</b> ${u.blocked?'🚫':''} ${u.is_admin?'(admin)':''}<br><small>${esc(u.email)} · saldo ${u.balance} · violações ${u.violations} · convite de ${esc(u.invited_by||'-')}</small><br>
-${u.is_admin?'':`<button class="r" onclick="run('moderate_user',{uid:'${u.id}',block:${!u.blocked},add_violation:false})">${u.blocked?'Desbloquear':'Bloquear'}</button><button onclick="run('moderate_user',{uid:'${u.id}',block:${u.blocked},add_violation:true})">+ Violação</button>`}</div>`).join('')}
-$('v').innerHTML=h}
+const cnt=async(tb,f)=>{let x=sb.from(tb).select('id',{count:'exact',head:true});if(f)x=f(x);const r=await x;return r.count||0};
+const bdg=(id,n)=>{const e=$(id);e.textContent=n;e.classList.toggle('hide',!n)};
+async function badges(){const[s,w]=await Promise.all([cnt('submissions',x=>x.eq('status','pending')),cnt('withdrawals',x=>x.eq('status','pending'))]);bdg('b1',s);bdg('b2',w);return[s,w]}
+const tagS=s=>`<span class="tag ${s=='pending'?'p':''}">${s=='pending'?'Pendente':esc(s)}</span>`;
+async function go(){
+$('mn').classList.add('hide');$('ti').textContent=t=='home'?'🔒 WilTasks · Admin':TT[t];
+document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==t));
+$('v').innerHTML='<p class="mut">A carregar…</p>';let h='';
+if(t=='home'){const[[s,w],u,k]=await Promise.all([badges(),cnt('profiles'),cnt('tasks',x=>x.eq('active',true))]);
+h=`<div class="grid"><div class="stat" onclick="setT('sub')"><b>${s}</b>Tarefas por aprovar</div><div class="stat" onclick="setT('wd')"><b>${w}</b>Levantamentos pendentes</div><div class="stat" onclick="setT('us')"><b>${u}</b>Utilizadores</div><div class="stat" onclick="setT('tk')"><b>${k}</b>Tarefas ativas</div></div>`}
+if(t=='sub'){badges();const{data,error}=await sb.from('submissions').select('*,tasks(title,reward),profiles(name,email)').eq('status','pending').order('created_at');
+if(error)h=`<p>${esc(error.message)}</p>`;else{for(const s of data){const u=await sb.storage.from('proofs').createSignedUrl(s.photo_path,600);
+h+=`<div class="card"><div class="top"><b>${esc(s.tasks.title)}</b><span class="tag">${s.tasks.reward} USDT</span></div><small>${esc(s.profiles.name)} (${esc(s.profiles.email)})</small><br><a href="${u.data?.signedUrl}" target="_blank"><img src="${u.data?.signedUrl}"></a>
+<textarea id="r${s.id}" placeholder="Motivo (obrigatório para rejeitar)"></textarea><div class="row"><button class="g" onclick="run('review_submission',{sid:'${s.id}',approve:true,why:null})">Aprovar</button><button class="r" onclick="rej('${s.id}')">Rejeitar</button></div></div>`}
+h=h||'<div class="card mut">Nada pendente. As tarefas enviadas aparecem aqui.</div>'}}
+if(t=='wd'){badges();const{data,error}=await sb.from('withdrawals').select('*,profiles(name,email)').order('created_at',{ascending:false});
+if(error)h=`<p>${esc(error.message)}</p>`;else{const L=wf=='pending'?data.filter(w=>w.status=='pending'):data;
+h=`<details class="card"><summary><b>Taxa: MZN por 1 USDT</b></summary><input id="rt" type="number" step="0.01" placeholder="ex: 63.50"><button style="width:100%;margin-top:6px" onclick="run('set_rate',{r:parseFloat($('rt').value)})">Guardar taxa</button></details>
+<div class="chips"><button class="sm ${wf=='pending'?'':'o'}" onclick="wf='pending';go()">Pendentes</button><button class="sm ${wf=='all'?'':'o'}" onclick="wf='all';go()">Todos</button></div>`+
+(L.map(w=>{const em=w.method=='emola';return `<div class="card"><div class="top"><b>${w.amount} USDT</b><span>${tagS(w.status)} <span class="tag">${em?'e-Mola':'BEP20'}</span></span></div><small>${esc(w.profiles.name)} · ${new Date(w.created_at).toLocaleString('pt')}</small>
+<div class="pay">${em?'<b>Pagar '+w.mzn+' MZN</b> para e-Mola <code>'+esc(w.phone)+'</code><br><small>taxa '+w.rate+'</small>':'<code>'+esc(w.wallet)+'</code>'}<div class="row"><button class="o sm" data-v="${esc(em?w.phone:w.wallet)}" onclick="cp(this.dataset.v)">Copiar ${em?'número':'endereço'}</button></div></div>
+${w.status=='pending'?`<input id="x${w.id}" placeholder="Hash BEP20 ou ID da transação e-Mola"><div class="row"><button class="g" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:true,tx:$('x${w.id}').value})">Marcar como pago</button><button class="r" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:false,tx:null})">Rejeitar</button></div>`:w.txhash?'<small>Tx: '+esc(w.txhash)+'</small>':''}</div>`}).join('')||'<div class="card mut">Sem levantamentos pendentes.</div>')}}
+if(t=='tk'){const{data,error}=await sb.from('tasks').select('*').order('created_at',{ascending:false});
+if(error)h=`<p>${esc(error.message)}</p>`;else{
+h=`<button style="width:100%" onclick="$('nf').classList.toggle('hide')">+ Nova tarefa</button><div id="nf" class="card hide"><input id="tt" placeholder="Título"><select id="ttype" onchange="chType()"><option value="texto">Simples (só texto)</option><option value="link">Link</option><option value="copiar">Copiar dados</option></select><textarea id="td" placeholder="Instruções"></textarea><div id="f_link" class="hide"><input id="tl" placeholder="URL (https://...)"></div><div id="f_copiar" class="hide"><input id="tn" placeholder="Nome"><input id="ts" placeholder="Sobrenome"><input id="te" placeholder="E-mail"><input id="tp" placeholder="Senha"></div><input id="tr" type="number" step="0.01" placeholder="Recompensa USDT"><small>Quantas pessoas podem fazer esta tarefa?</small><input id="tsl" type="number" min="1" step="1" value="1"><button style="width:100%;margin-top:6px" onclick="addT()">Criar tarefa</button></div>`+
+data.map(k=>`<div class="card"><div class="top"><b>${esc(k.title)}</b><span class="tag ${k.active?'on':'off'}">${k.active?'Ativa':'Inativa'}</span></div><small>${k.reward} USDT · ${esc(k.kind||'texto')} · ${k.slots||1} vaga(s)</small><div class="row"><button class="${k.active?'o':''}" onclick="tog('${k.id}',${!k.active})">${k.active?'Desativar':'Ativar'}</button><button class="r" onclick="del('${k.id}')">Eliminar</button></div></div>`).join('')||'<div class="card mut">Ainda não há tarefas.</div>'}}
+if(t=='us'){const{data,error}=await sb.from('profiles').select('*').order('created_at',{ascending:false});
+if(error)h=`<p>${esc(error.message)}</p>`;else{U=data;h=`<input id="sq" placeholder="Pesquisar por nome ou e-mail" value="${esc(q)}" oninput="q=this.value;drawU()"><div id="ul"></div>`}}
+$('v').innerHTML=h;if(t=='us'&&U.length)drawU()}
+function drawU(){const s=q.trim().toLowerCase();
+$('ul').innerHTML=U.filter(u=>!s||(u.name||'').toLowerCase().includes(s)||(u.email||'').toLowerCase().includes(s)).map(u=>`<div class="card"><div class="top"><b>${esc(u.name)}</b><span>${u.blocked?'<span class="tag b">Bloqueado</span>':''}${u.is_admin?' <span class="tag">Admin</span>':''}</span></div><small>${esc(u.email)}</small><br><small>Saldo ${u.balance} · violações ${u.violations} · convite de ${esc(u.invited_by||'-')}</small>
+${u.is_admin?'':`<div class="row"><button class="${u.blocked?'':'r'}" onclick="run('moderate_user',{uid:'${u.id}',block:${!u.blocked},add_violation:false})">${u.blocked?'Desbloquear':'Bloquear'}</button><button class="o" onclick="run('moderate_user',{uid:'${u.id}',block:${u.blocked},add_violation:true})">+ Violação</button></div>`}</div>`).join('')||'<div class="card mut">Nenhum utilizador encontrado.</div>'}
+function rej(id){const w=$('r'+id).value.trim();if(!w)return alert('Indique o motivo da rejeição.');run('review_submission',{sid:id,approve:false,why:w})}
 async function addT(){const k=$('ttype').value;let extra={};
 if(k=='link')extra={url:$('tl').value};
 if(k=='copiar')extra={nome:$('tn').value,sobrenome:$('ts').value,email:$('te').value,senha:$('tp').value};
 const sl=parseInt($('tsl').value)||1;if(sl<1)return alert('Mínimo 1 pessoa');
 const r=await sb.from('tasks').insert({title:$('tt').value,description:$('td').value,reward:parseFloat($('tr').value),kind:k,extra,slots:sl});if(r.error)alert(r.error.message);go()}
 function chType(){const k=$('ttype').value;$('f_link').classList.toggle('hide',k!='link');$('f_copiar').classList.toggle('hide',k!='copiar')}
+async function del(id){if(!confirm('Eliminar esta tarefa de forma definitiva?'))return;
+const r=await sb.from('tasks').delete().eq('id',id).select();
+if(r.error)alert(r.error.code=='23503'?'Esta tarefa já tem envios de utilizadores e não pode ser eliminada. Desative-a em vez disso.':r.error.message);
+else if(!r.data.length)alert('Não foi possível eliminar: sem permissão na base de dados. Execute o SQL de permissão para administradores na tabela tasks.');
+go()}
 async function tog(id,a){await sb.from('tasks').update({active:a}).eq('id',id);go()}
 boot();
-</script></div></body></html>
+</script></body></html>
