@@ -43,7 +43,7 @@ nav button i{font-style:normal;font-size:1.35rem;line-height:1}nav button.on{col
 <script src="config.js"></script>
 <script>
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY),$=i=>document.getElementById(i);
-let t='home',wf='pending',q='',U=[];
+let t='home',wf='pending',tf='all',q='',U=[];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const TT={home:'Início',sub:'Tarefas enviadas',wd:'Levantamentos',tk:'Tarefas',us:'Utilizadores'};
 const setT=x=>{t=x;go()};
@@ -78,8 +78,10 @@ h=`<details class="card"><summary><b>Taxa: MZN por 1 USDT</b></summary><input id
 ${w.status=='pending'?`<input id="x${w.id}" placeholder="Hash BEP20 ou ID da transação e-Mola"><div class="row"><button class="g" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:true,tx:$('x${w.id}').value})">Marcar como pago</button><button class="r" onclick="run('resolve_withdrawal',{wid:'${w.id}',paid:false,tx:null})">Rejeitar</button></div>`:w.txhash?'<small>Tx: '+esc(w.txhash)+'</small>':''}</div>`}).join('')||'<div class="card mut">Sem levantamentos pendentes.</div>')}}
 if(t=='tk'){const{data,error}=await sb.from('tasks').select('*').order('created_at',{ascending:false});
 if(error)h=`<p>${esc(error.message)}</p>`;else{
-h=`<button style="width:100%" onclick="$('nf').classList.toggle('hide')">+ Nova tarefa</button><div id="nf" class="card hide"><input id="tt" placeholder="Título"><select id="ttype" onchange="chType()"><option value="texto">Simples (só texto)</option><option value="link">Link</option><option value="copiar">Copiar dados</option></select><textarea id="td" placeholder="Instruções"></textarea><div id="f_link" class="hide"><input id="tl" placeholder="URL (https://...)"></div><div id="f_copiar" class="hide"><input id="tn" placeholder="Nome"><input id="ts" placeholder="Sobrenome"><input id="te" placeholder="E-mail"><input id="tp" placeholder="Senha"></div><input id="tr" type="number" step="0.01" placeholder="Recompensa USDT"><small>Quantas pessoas podem fazer esta tarefa?</small><input id="tsl" type="number" min="1" step="1" value="1"><button style="width:100%;margin-top:6px" onclick="addT()">Criar tarefa</button></div>`+
-data.map(k=>`<div class="card"><div class="top"><b>${esc(k.title)}</b><span class="tag ${k.active?'on':'off'}">${k.active?'Ativa':'Inativa'}</span></div><small>${k.reward} USDT · ${esc(k.kind||'texto')} · ${k.slots||1} vaga(s)</small><div class="row"><button class="${k.active?'o':''}" onclick="tog('${k.id}',${!k.active})">${k.active?'Desativar':'Ativar'}</button><button class="r" onclick="del('${k.id}')">Eliminar</button></div></div>`).join('')||'<div class="card mut">Ainda não há tarefas.</div>'}}
+h=`<div class="row" style="margin-top:0"><button onclick="newT(0)">+ Tarefa normal</button><button class="g" onclick="newT(1)">⭐ + Tarefa premium</button></div>
+<div class="chips" style="margin-top:10px"><button class="sm ${tf=='all'?'':'o'}" onclick="tf='all';go()">Todas</button><button class="sm ${tf=='n'?'':'o'}" onclick="tf='n';go()">Normais</button><button class="sm ${tf=='p'?'':'o'}" onclick="tf='p';go()">⭐ Premium</button></div>
+<div id="nf" class="card hide"><select id="tprem"><option value="0">Tarefa normal</option><option value="1">⭐ Tarefa premium (só utilizadores liberados)</option></select><input id="tt" placeholder="Título"><select id="ttype" onchange="chType()"><option value="texto">Simples (só texto)</option><option value="link">Link</option><option value="copiar">Copiar dados</option></select><textarea id="td" placeholder="Instruções"></textarea><div id="f_link" class="hide"><input id="tl" placeholder="URL (https://...)"></div><div id="f_copiar" class="hide"><input id="tn" placeholder="Nome"><input id="ts" placeholder="Sobrenome"><input id="te" placeholder="E-mail"><input id="tp" placeholder="Senha"></div><input id="tr" type="number" step="0.01" placeholder="Recompensa USDT (premium: 0.10 a 0.15)"><small>Quantas pessoas podem fazer esta tarefa?</small><input id="tsl" type="number" min="1" step="1" value="1"><button style="width:100%;margin-top:6px" onclick="addT()">Criar tarefa</button></div>`+
+data.filter(k=>tf=='all'||(tf=='p')==!!k.premium).map(k=>`<div class="card"><div class="top"><b>${esc(k.title)}</b><span>${k.premium?'<span class="tag p">⭐ Premium</span> ':''}<span class="tag ${k.active?'on':'off'}">${k.active?'Ativa':'Inativa'}</span></span></div><small>${k.reward} USDT · ${esc(k.kind||'texto')} · ${k.slots||1} vaga(s)</small><div class="row"><button class="${k.active?'o':''}" onclick="tog('${k.id}',${!k.active})">${k.active?'Desativar':'Ativar'}</button><button class="r" onclick="del('${k.id}')">Eliminar</button></div></div>`).join('')||'<div class="card mut">Ainda não há tarefas.</div>'}}
 if(t=='us'){const{data,error}=await sb.from('profiles').select('*').order('created_at',{ascending:false});
 if(error)h=`<p>${esc(error.message)}</p>`;else{U=data;h=`<input id="sq" placeholder="Pesquisar por nome ou e-mail" value="${esc(q)}" oninput="q=this.value;drawU()"><div id="ul"></div>`}}
 $('v').innerHTML=h;if(t=='us'&&U.length)drawU()}
@@ -91,7 +93,10 @@ async function addT(){const k=$('ttype').value;let extra={};
 if(k=='link')extra={url:$('tl').value};
 if(k=='copiar')extra={nome:$('tn').value,sobrenome:$('ts').value,email:$('te').value,senha:$('tp').value};
 const sl=parseInt($('tsl').value)||1;if(sl<1)return alert('Mínimo 1 pessoa');
-const r=await sb.from('tasks').insert({title:$('tt').value,description:$('td').value,reward:parseFloat($('tr').value),kind:k,extra,slots:sl});if(r.error)alert(r.error.message);go()}
+const pm=$('tprem').value=='1',rw=parseFloat($('tr').value);
+if(pm&&(rw<0.10||rw>0.15)&&!confirm('Tarefas premium pagam entre 0,10 e 0,15 USDT. Continuar com '+rw+'?'))return;
+const r=await sb.from('tasks').insert({title:$('tt').value,description:$('td').value,reward:rw,kind:k,extra,slots:sl,premium:pm});if(r.error)alert(r.error.message);go()}
+function newT(p){$('nf').classList.remove('hide');$('tprem').value=p;$('tt').focus()}
 function chType(){const k=$('ttype').value;$('f_link').classList.toggle('hide',k!='link');$('f_copiar').classList.toggle('hide',k!='copiar')}
 async function del(id){if(!confirm('Eliminar esta tarefa de forma definitiva?'))return;
 const r=await sb.from('tasks').delete().eq('id',id).select();
@@ -101,3 +106,4 @@ go()}
 async function tog(id,a){await sb.from('tasks').update({active:a}).eq('id',id);go()}
 boot();
 </script></body></html>
+
