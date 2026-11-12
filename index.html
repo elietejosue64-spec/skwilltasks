@@ -127,17 +127,20 @@ $('chip').textContent=Number(me.balance).toFixed(2)+' USDT';$('dnm').textContent
 if(me.blocked){$('v').innerHTML='<div class="card"><h2>Conta bloqueada</h2><p>Contacte o suporte.</p></div>';return}
 const hd=`<div class="card" style="background:var(--b);color:#fff"><small style="color:#bfdbfe">Saldo</small><h1>${Number(me.balance).toFixed(2)} USDT</h1></div>`;
 let h=hd;
-if(tab=='tasks'||tab=='home'){const[{data:t0},{data:s0},{data:ct}]=await Promise.all([sb.from('tasks').select('*').eq('active',true).order('created_at',{ascending:false}),sb.from('submissions').select('task_id,status,tasks(reward)').eq('user_id',me.id),sb.rpc('task_counts')]);
+if(tab=='tasks'||tab=='home'){const[{data:t0},{data:s0},{data:ct},{data:pu}]=await Promise.all([sb.from('tasks').select('*').eq('active',true).order('created_at',{ascending:false}),sb.from('submissions').select('task_id,status,tasks(reward)').eq('user_id',me.id),sb.rpc('task_counts'),sb.rpc('my_premium_unlocked')]);
 const s=s0||[];
 const C={};(ct||[]).forEach(x=>C[x.task_id]=x.taken);
-const t=(t0||[]).filter(k=>(C[k.id]||0)<(k.slots||1));
+const t=(t0||[]).filter(k=>(C[k.id]||0)<(k.slots||1)&&(!k.premium||pu===true));
+const lock=(t0||[]).filter(k=>k.premium&&pu!==true&&(C[k.id]||0)<(k.slots||1)).length;
 const d={};s.filter(x=>x.status=='pending'||x.status=='approved').forEach(x=>d[x.task_id]=x.status);
 const pend=s.filter(x=>x.status=='pending').length,ok=s.filter(x=>x.status=='approved'),gan=ok.reduce((a,x)=>a+Number(x.tasks?.reward||0),0);
 TK={};t.forEach(k=>TK[k.id]=k);
 const first=(me.name||'').trim().split(' ')[0],hr=new Date().getHours(),gt=hr<12?'Bom dia':hr<18?'Boa tarde':'Boa noite';
 if(tab=='home')h+=`<h2 style="margin:14px 0 0">${gt}, ${esc(first)} 👋</h2><p class="m" style="margin:0">Pronto para ganhar hoje?</p>
+<div class="card tip" style="margin:12px 0"><b>⭐ Tarefas Premium</b><p class="m" style="margin:6px 0 0">As tarefas premium só são liberadas após o seu primeiro levantamento (saque). Nelas você ganha de <b>0,10 USDT a 0,15 USDT</b> por tarefa.</p></div>
 <div class="gr"><div class="st"><div class="n">${t.filter(k=>!d[k.id]).length}</div><small>📋 Disponíveis</small></div><div class="st" style="animation-delay:.05s"><div class="n">${pend}</div><small>⏳ Em análise</small></div><div class="st" style="animation-delay:.1s"><div class="n">${ok.length}</div><small>✅ Aprovadas</small></div><div class="st" style="animation-delay:.15s"><div class="n">${gan.toFixed(2)}</div><small>💵 Ganho (USDT)</small></div></div>`;
-if(tab=='tasks')h+=t.length?t.map(k=>`<div class="card"><b>${esc(k.title)}</b> <span class="tag">${k.reward} USDT</span> <span class="tag">Vagas: ${C[k.id]||0}/${k.slots||1}</span><p class="m" style="white-space:pre-wrap">${esc(k.description)}</p>${ST()[k.id]&&!d[k.id]?body(k):''}${d[k.id]?`<span class="tag ${d[k.id]}">${d[k.id]}</span>`:act(k.id)}</div>`).join(''):`<div class="card em"><div class="ic">🎯</div><h2>Sem tarefas por agora</h2><p class="m">Novas tarefas aparecem aqui assim que forem publicadas. Volte daqui a pouco!</p><button class="btn" onclick="render()">🔄 Atualizar</button></div>`;
+if(tab=='tasks'&&lock)h+=`<div class="card tip"><b>🔒 ${lock} tarefa(s) premium bloqueada(s)</b><p class="m" style="margin:6px 0 0">Serão liberadas após o seu primeiro levantamento pago.</p></div>`;
+if(tab=='tasks')h+=t.length?t.map(k=>`<div class="card"><b>${esc(k.title)}</b> ${k.premium?'<span class="tag" style="background:#fef3c7">⭐ Premium</span> ':''}<span class="tag">${k.reward} USDT</span> <span class="tag">Vagas: ${C[k.id]||0}/${k.slots||1}</span><p class="m" style="white-space:pre-wrap">${esc(k.description)}</p>${ST()[k.id]&&!d[k.id]?body(k):''}${d[k.id]?`<span class="tag ${d[k.id]}">${d[k.id]}</span>`:act(k.id)}</div>`).join(''):`<div class="card em"><div class="ic">🎯</div><h2>Sem tarefas por agora</h2><p class="m">Novas tarefas aparecem aqui assim que forem publicadas. Volte daqui a pouco!</p><button class="btn" onclick="render()">🔄 Atualizar</button></div>`;
 if(tab=='home')h+=`<div class="card"><b>Atalhos</b><br><button class="btn" style="margin:8px 8px 0 0" onclick="go2('tasks')">📋 Ver tarefas</button><button class="btn" style="margin-top:8px" onclick="go2('wallet')">💰 Carteira</button></div>`;
 h+=`<div class="card tip"><b>💡 Dica</b><p class="m" style="margin:6px 0 0">Leia as instruções com atenção e envie uma foto nítida do comprovativo. Fotos falsas ou repetidas são rejeitadas e podem bloquear a conta.</p></div>`}
 if(tab=='wallet'){const[{data:w},{data:st}]=await Promise.all([sb.from('withdrawals').select('*').order('created_at',{ascending:false}),sb.from('settings').select('value').eq('key','mzn_rate').single()]);rate=Number(st?.value||0);
